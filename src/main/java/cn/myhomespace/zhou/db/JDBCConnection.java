@@ -99,6 +99,7 @@ public class JDBCConnection {
             i = statement.executeUpdate(sql);
         } catch (SQLException e) {
             e.printStackTrace();
+            System.out.println(sql);
         }finally {
             if(statement!=null){
                 try {
@@ -341,7 +342,7 @@ public class JDBCConnection {
 
     }
 
-    public static  <T> boolean insertResultFormatClass(T obj,String tableName){
+    public static  <T> boolean insertResultFormatClass(List<T> objs,String tableName){
         Connection connection=null;
         if(USE_DEFAULT_TYPE){
             connection = initParamsByDefault();
@@ -352,35 +353,43 @@ public class JDBCConnection {
         sql.append("(");
 
         StringBuilder values = new StringBuilder();
-        values.append("(");
-        Field[] declaredFields = obj.getClass().getDeclaredFields();
-        for(Field field : declaredFields){
-            String name = field.getName();
+        boolean isFirst = true;
+        for(T t : objs){
+            values.append("(");
+            Field[] declaredFields = t.getClass().getDeclaredFields();
+            for(Field field : declaredFields){
+                String name = field.getName();
 
-            field.setAccessible(true);
-            Object o=null;
-            try {
-                o = field.get(obj);
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
+                field.setAccessible(true);
+                Object o=null;
+                try {
+                    o = field.get(t);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
 
-            if(o!=null&& !StringUtils.isEmpty(o.toString())){
+                if(o!=null&& !StringUtils.isEmpty(o.toString())){
 
-                if(!name.equals("id")&&!o.toString().equals("0")){
-                    sql.append(name);
-                    sql.append(",");
-                    values.append("\'"+o+"\'");
-                    values.append(",");
+                    if(!name.equals("id")&&!o.toString().equals("0")){
+                        if(isFirst){
+                            sql.append(name);
+                            sql.append(",");
+                        }
+                        values.append("\'"+o+"\'");
+                        values.append(",");
+                    }
                 }
             }
-
+            int curr_length = values.length();
+            values=values.deleteCharAt(curr_length-1);
+            values.append("),");
+            isFirst=false;
         }
+
         int val_len = values.length();
         int sql_len = sql.length();
 
         String val = values.substring(0,val_len - 1);
-        val=val+")";
         String sqls = sql.substring(0,sql_len - 1);
         sqls=sqls+")";
 

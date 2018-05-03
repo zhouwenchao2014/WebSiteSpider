@@ -23,6 +23,15 @@ public class SpiderProjectManage {
     private String modifiedBy;
     private Date createdTime;
     private Date modifiedTime;
+    private boolean isStarting;
+
+    public boolean isStarting() {
+        return isStarting;
+    }
+
+    public void setStarting(boolean starting) {
+        isStarting = starting;
+    }
 
     public SpiderProjectManage(int id, String name, String displayName, String rootUrl, String config, String createdBy, String modifiedBy, Date createdTime, Date modifiedTime) {
         this.id = id;

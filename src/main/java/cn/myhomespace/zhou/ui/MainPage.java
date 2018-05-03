@@ -227,7 +227,9 @@ public class MainPage {
                 SpiderProjectManage spiderProjectManage_new = new SpiderProjectManage(id,name,displayNameText_val,urlText_val,configText_val,"","",date,date);
                 boolean spider_project_manage=false;
                 if(id==0){
-                    spider_project_manage = JDBCConnection.insertResultFormatClass(spiderProjectManage_new, TableUtils.TABLE_SPIDER_PROJECT_MANAGE);
+                    List<SpiderProjectManage> spiderProjectManages = new ArrayList<>();
+                    spiderProjectManages.add(spiderProjectManage_new);
+                    spider_project_manage = JDBCConnection.insertResultFormatClass(spiderProjectManages, TableUtils.TABLE_SPIDER_PROJECT_MANAGE);
                 }else {
                     List<SetParam> setParams = spiderProjectManage_new.buildWhereParams();
                     List<WhereParam> whereParams = new ArrayList<>();
