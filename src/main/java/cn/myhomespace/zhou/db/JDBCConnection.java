@@ -6,8 +6,11 @@ import cn.myhomespace.zhou.object.TableManageDo;
 import cn.myhomespace.zhou.object.WhereParam;
 import org.apache.commons.lang3.StringUtils;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -153,40 +156,7 @@ public class JDBCConnection {
         if(USE_DEFAULT_TYPE){
             connection = initParamsByDefault();
         }
-        StringBuilder sql = new StringBuilder();
-        sql.append("select ");
-        if(queryFields!=null){
-            int length = queryFields.length;
-            for(int i=0;i<length;i++){
-                String queryField = queryFields[i];
-                sql.append(queryField);
-                if(i!=length-1){
-                    sql.append(",");
-                }
-            }
-
-        }else {
-            sql.append(" * ");
-        }
-        sql.append("from ");
-        sql.append(tableName);
-        if(whereParams!=null){
-            sql.append(" where ");
-            int size = whereParams.size();
-            for (int i=0;i<size;i++){
-                WhereParam whereParam = whereParams.get(i);
-                sql.append(whereParam.getLeft());
-                sql.append(whereParam.getOper());
-                sql.append(whereParam.getRight());
-                if(i!=size-1){
-                    sql.append(" and ");
-                }
-            }
-        }
-        if(querySize!=0){
-            sql.append( " limit 0,"+querySize);
-        }
-        String s = sql.toString();
+        String s = buildSql(queryFields, whereParams, tableName,querySize);
         String replace = s.replace("*", "count(1)");
         ResultSet resultSet = queryBySql(connection, s);
         if(querySize==0){
@@ -238,6 +208,95 @@ public class JDBCConnection {
             }
         }
         return tableManageDo;
+    }
+
+    public static String buildSql(String[] queryFields,List<WhereParam> whereParams,String tableName,int querySize){
+        StringBuilder sql = new StringBuilder();
+        sql.append("select ");
+        if(queryFields!=null){
+            int length = queryFields.length;
+            for(int i=0;i<length;i++){
+                String queryField = queryFields[i];
+                sql.append(queryField);
+                if(i!=length-1){
+                    sql.append(",");
+                }
+            }
+
+        }else {
+            sql.append(" * ");
+        }
+        sql.append("from ");
+        sql.append(tableName);
+        if(whereParams!=null){
+            sql.append(" where ");
+            int size = whereParams.size();
+            for (int i=0;i<size;i++){
+                WhereParam whereParam = whereParams.get(i);
+                sql.append(whereParam.getLeft());
+                sql.append(whereParam.getOper());
+                sql.append(whereParam.getRight());
+                if(i!=size-1){
+                    sql.append(" and ");
+                }
+            }
+        }
+        if(querySize!=0){
+            sql.append( " limit 0,"+querySize);
+        }
+        String s = sql.toString();
+        return s;
+    }
+
+    public static <T> List<T> queryResultFormatByClass(Class<T> clazz,List<WhereParam> whereParams,String tableName,int querySize){
+        return queryResultFormatByClass(clazz,null,whereParams,tableName,querySize);
+    }
+
+    public static <T> List<T> queryResultFormatByClass(Class<T> clazz,String tableName,int querySize){
+        return queryResultFormatByClass(clazz,null,null,tableName,querySize);
+    }
+
+    public static <T> List<T> queryResultFormatByClass(Class<T> clazz,String[] queryFields,List<WhereParam> whereParams,String tableName,int querySize){
+        Connection connection=null;
+        if(USE_DEFAULT_TYPE){
+            connection = initParamsByDefault();
+        }
+        String s = buildSql(queryFields, whereParams, tableName, querySize);
+        ResultSet resultSet = queryBySql(connection,s);
+        List<T> ts = new ArrayList<>();
+        try {
+            Field[] fields = clazz.getDeclaredFields();
+            int length = fields.length;
+            String[] columnNames=new String[length];
+            for(int i = 0; i< length; i++){
+                columnNames[i]=fields[i].getName();
+            }
+            while(resultSet.next()){
+                Constructor<T> constructor = clazz.getConstructor();
+                T t = constructor.newInstance();
+                for(int i = 0; i< length; i++){
+                    String string = resultSet.getString(fields[i].getName());
+                    Field declaredField = t.getClass().getDeclaredField(fields[i].getName());
+                    declaredField.setAccessible(true);
+                    declaredField.set(t,string);
+                }
+                ts.add(t);
+            }
+        } catch (NoSuchMethodException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            e.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        }
+
+        return ts;
     }
 
     public static  <T> TableManageDo queryResultFormatClass(Class<T> clazz,List<WhereParam> whereParams,String tableName,int querySize){

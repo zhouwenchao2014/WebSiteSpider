@@ -2,6 +2,8 @@ package cn.myhomespace.zhou.consumer;
 
 import cn.myhomespace.zhou.object.Page;
 
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 
 /**
@@ -9,14 +11,14 @@ import java.util.concurrent.BlockingQueue;
  */
 public class Monitor implements Runnable {
 
-    private BlockingQueue<String> noSpiderUrls;
+    private Map<String,BlockingQueue<String>> noSpiderUrlsMap;
 
     private BlockingQueue<String> spiderUrls;
 
     private BlockingQueue<Page> pages;
 
-    public Monitor(BlockingQueue<String> noSpiderUrls, BlockingQueue<String> spiderUrls, BlockingQueue<Page> pages) {
-        this.noSpiderUrls = noSpiderUrls;
+    public Monitor(Map<String,BlockingQueue<String>> noSpiderUrlsMap, BlockingQueue<String> spiderUrls, BlockingQueue<Page> pages) {
+        this.noSpiderUrlsMap = noSpiderUrlsMap;
         this.spiderUrls = spiderUrls;
         this.pages = pages;
     }
@@ -24,7 +26,12 @@ public class Monitor implements Runnable {
     @Override
     public void run() {
         while (true){
-            System.out.println("未消费队列长度："+noSpiderUrls.size());
+            Set<String> keys = noSpiderUrlsMap.keySet();
+            for(String key : keys){
+                BlockingQueue<String> key_Queue = noSpiderUrlsMap.get(key);
+                int size = key_Queue.size();
+                System.out.println("未消费"+key+"队列长度："+size);
+            }
             System.out.println("已消费队列长度："+spiderUrls.size());
             System.out.println("页面队列长度："+pages.size());
             try {

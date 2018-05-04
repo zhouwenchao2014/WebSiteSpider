@@ -1,6 +1,7 @@
 package cn.myhomespace.zhou.consumer;
 
 import cn.myhomespace.zhou.object.Page;
+import cn.myhomespace.zhou.object.SpiderProjectManage;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
@@ -25,21 +26,20 @@ public class Producer implements Runnable{
 
     private BlockingQueue<Page> pages;
 
-    private String siteName;
+    private SpiderProjectManage spiderProjectManage;
 
-    private String rootUrl;
-
-    public Producer(BlockingQueue<String> noSpiderUrls, BlockingQueue<String> spiderUrls, BlockingQueue<Page> pages, String siteName, String rootUrl) {
+    public Producer(BlockingQueue<String> noSpiderUrls, BlockingQueue<String> spiderUrls, BlockingQueue<Page> pages, SpiderProjectManage spiderProjectManage) {
         this.noSpiderUrls = noSpiderUrls;
         this.spiderUrls = spiderUrls;
         this.pages = pages;
-        this.siteName = siteName;
-        this.rootUrl = rootUrl;
+        this.spiderProjectManage=spiderProjectManage;
     }
 
     @Override
     public void run() {
         int i=0;
+        String rootUrl = spiderProjectManage.getRootUrl();
+        String name = spiderProjectManage.getName();
         while (true){
             String take=null;
             try {
@@ -55,7 +55,7 @@ public class Producer implements Runnable{
                 Elements elements = doc.getElementsByTag("a");
                 Page page = new Page();
                 page.setCreateTime(new Date(System.currentTimeMillis()));
-                page.setSiteName(siteName);
+                page.setSiteName(name);
                 List<String> sources = new ArrayList<>();
                 page.setTitle(doc.title());
                 page.setUrl(take);
